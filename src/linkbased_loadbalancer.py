@@ -173,11 +173,14 @@ class DynamicCascadingLB(app_manager.RyuApp):
 
         parser = datapath.ofproto_parser
         
+        # Flow broadcast
         self._add_flow(datapath, 10, parser.OFPMatch(eth_dst='ff:ff:ff:ff:ff:ff'), [parser.OFPActionOutput(datapath.ofproto.OFPP_FLOOD)])
+        # Flow cho client (h_ext)
         self._add_flow(datapath, 20, parser.OFPMatch(eth_dst=H_EXT_MAC), [parser.OFPActionOutput(1)])
         
         self.logger.info("Added flow on s%d: eth_dst=ff:ff:ff:ff:ff:ff -> FLOOD", dpid)
         self.logger.info("Added flow on s%d: eth_dst=%s -> port 1", dpid, H_EXT_MAC)
+        # Flow cho từng server
         for srv in SERVERS.values():
             if srv['s_dpid'] == dpid:
                 self._add_flow(datapath, 20, parser.OFPMatch(eth_dst=srv['mac']), [parser.OFPActionOutput(srv['s_port'])])
@@ -223,7 +226,7 @@ class DynamicCascadingLB(app_manager.RyuApp):
                 dst_port = udp_pkt.dst_port
                 proto = 17
             else:
-                # Non-TCP/UDP (ICMP, etc.) – có thể xử lý riêng hoặc bỏ qua
+                # Non-TCP/UDP (ICMP, etc.)
                 src_port = 0
                 dst_port = 0
                 proto = 1  # ICMP
@@ -234,6 +237,7 @@ class DynamicCascadingLB(app_manager.RyuApp):
             
             self._install_nat_flows(datapath, ipv4_pkt.src, server, src_port, dst_port, proto)
             
+            # Tạo PacketOut
             parser = datapath.ofproto_parser
             actions = [
                 parser.OFPActionSetField(eth_dst=server['mac']),
@@ -245,7 +249,7 @@ class DynamicCascadingLB(app_manager.RyuApp):
 
         if arp_pkt and arp_pkt.opcode == arp.ARP_REQUEST:
             # Kiểm tra xem địa chỉ đích có phải là IP của client không (10.0.0.5)
-            if arp_pkt.dst_ip == '10.0.0.5':   # hoặc lấy từ hằng số H_EXT_IP nếu có
+            if arp_pkt.dst_ip == '10.0.0.5':
                 self.logger.info("ARP request from %s for client %s, replying with MAC %s", 
                                 arp_pkt.src_ip, arp_pkt.dst_ip, H_EXT_MAC)
                 self._reply_arp_client(datapath, in_port, eth, arp_pkt)

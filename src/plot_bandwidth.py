@@ -7,7 +7,7 @@ import matplotlib.dates as mdates
 sns.set_theme(style="whitegrid")
 
 # Đọc dữ liệu
-df = pd.read_csv('bandwidth_stats.csv')
+df = pd.read_csv('./res/bandwidth_stats.csv')
 df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s')
 
 # Chuyển đổi sang Mbps và tạo nhãn link
@@ -46,38 +46,7 @@ for sw in switches:
     plt.savefig(f'bandwidth_switch_{sw}.png', dpi=300, bbox_inches='tight')
     plt.close()
 
-# 3. Heatmap băng thông trung bình (Mbps)
-pivot = df.pivot_table(index='link', columns='timestamp', values='Mbps', aggfunc='mean')
-plt.figure(figsize=(14, 5))
-ax = sns.heatmap(pivot, cmap='YlOrRd', cbar_kws={'label': 'Bandwidth (Mbps)'})
-plt.title('Bandwidth Heatmap Over Time', fontsize=14, pad=15)
-# Ẩn nhãn trục X của heatmap để tránh rối mắt
-ax.set_xticks([])
-plt.xlabel('Time (Progression ->)', fontsize=12)
-plt.ylabel('Link (Switch:Port)', fontsize=12)
-plt.tight_layout()
-plt.savefig('bandwidth_heatmap.png', dpi=300, bbox_inches='tight')
-plt.close()
-
-# 4. Thống kê tóm tắt
+# 3. Thống kê tóm tắt
 print("=== Thống kê băng thông (Mbps) ===")
 summary = df.groupby('link')['Mbps'].describe()
 print(summary)
-
-# 5. Biểu đồ Boxplot (Trực quan hóa thống kê Summary)
-plt.figure(figsize=(12, 6))
-# Vẽ boxplot để xem phân phối băng thông (min, max, median, outliers)
-sns.boxplot(data=df, x='link', y='Mbps', palette='Set2', width=0.6)
-
-# Thêm Swarmplot (các chấm nhỏ) chìm ở dưới để thấy rõ mật độ dữ liệu
-sns.stripplot(data=df, x='link', y='Mbps', color='black', alpha=0.3, size=3, jitter=True)
-
-plt.title('Bandwidth Distribution Summary Per Link (Boxplot)', fontsize=16, pad=15)
-plt.ylabel('Bandwidth (Mbps)', fontsize=12)
-plt.xlabel('Link (Switch:Port)', fontsize=12)
-plt.grid(True, axis='y', linestyle='--', alpha=0.7)
-plt.tight_layout()
-plt.savefig('bandwidth_summary_boxplot.png', dpi=300, bbox_inches='tight')
-plt.close()
-
-print("Đã xuất biểu đồ thống kê Boxplot ra file 'bandwidth_summary_boxplot.png'!")
